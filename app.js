@@ -26,8 +26,8 @@ app.post('/login', async (req, res) => {
     console.log('Contraseña correcta. Usuario Autenticado');
     // console.log(rows);
     // contraseñas correctas
-    const token = await generarToken(rows[0]);
-    const tokenRefresh = await generarTokenRefresh(rows[0]);
+    const token = await generarToken(rows[0].email);
+    const tokenRefresh = await generarTokenRefresh(rows[0].email);
     const bdTokenRefres = await connection.query('UPDATE usuarios SET refreshToken = ? WHERE email = ?', [tokenRefresh, email]);
     // console.log({"Generado Token inicio: ":token});
     // console.log({"Generado Token Refresco: ": tokenRefresh});
@@ -86,9 +86,12 @@ app.post('/refresh', async (req, res) => {
     
     const decode = jwt.verify(token, "secretRefresh");
 
+    console.log(decode);
+    
+    const nuevoToken = await generarToken(decode)
+
     
 
-    const nuevoToken = await generarToken(decode)
       return res.json({
       mensaje: "Ingresando a la ruta Refresh",
       tokenRefresh : nuevoToken
@@ -96,37 +99,39 @@ app.post('/refresh', async (req, res) => {
     
   } catch (error) {
     return res.json({
-      mensaje: "Erroral ingresar a la ruta Refresh",
+      mensaje: "Error al ingresar a la ruta Refresh",
     }); 
   }
 
   
 });
 
-const generarToken = async (user) => {
+
+
+const generarToken = async (userEmail) => {
   return jwt.sign({
-    data: 'foobar'
+    data: userEmail
   }, 'secret', { expiresIn: '1h' });
 }
 
 
-const generarTokenRefresh = async (user) => {
+const generarTokenRefresh = async (userEmail) => {
   return jwt.sign({
-    data: 'foobar'
+    data: userEmail
   }, 'secretRefresh', { expiresIn: '7d' });
 }
 
 app.listen(3000)
 
 app.post("/registro", async (req, res) => {
-    const nombre = req.body.nombre;
-    const email = req.body.email;
-    const password = await bcrypt.hash(req.body.password,10);
-    const [respuesta] = connection.query("INSERT INTO usuarios (nombre, email, contrasena) VALUES (?, ?, ?)", [nombre, email, password]);
+  const nombre = req.body.nombre;
+  const email = req.body.email;
+  const password = await bcrypt.hash(req.body.password,10);
+  const [respuesta] = connection.query("INSERT INTO usuarios (nombre, email, contrasena) VALUES (?, ?, ?)", [nombre, email, password]);
 
-    console.log(respuesta);
-    console.log(nombre,email,password);
-    return res.json({"registro": true}) 
+  console.log(respuesta);
+  console.log(nombre,email,password);
+  return res.json({"registro": true}) 
 })
 
 
